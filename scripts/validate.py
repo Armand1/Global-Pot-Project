@@ -28,14 +28,12 @@ from pathlib import Path
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-ICLOUD_ROOT = (
+ONEDRIVE_ROOT = (
     Path.home()
-    / "Library/Mobile Documents/com~apple~CloudDocs"
+    / "Library/CloudStorage/OneDrive-ImperialCollegeLondon"
 )
-ORIGINALS_DIR = (
-    ICLOUD_ROOT
-    / "Desktop/Global Pot Project 2026/pots_original"
-)
+ONEDRIVE_GPP = ONEDRIVE_ROOT / "Global Pot Project  Master"
+ORIGINALS_DIR = ONEDRIVE_GPP / "images" / "originals"
 METADATA_CSV = REPO_ROOT / "data" / "master_metadata.csv"
 MANIFEST_CSV = REPO_ROOT / "data" / "manifests" / "originals_manifest.csv"
 
