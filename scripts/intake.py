@@ -90,10 +90,23 @@ def load_profiled_ids(profiles_csv: Path) -> set[str]:
     return profiled
 
 
+def load_metadata_ids(metadata_csv: Path) -> set[str]:
+    """Return the set of gpp_nos that have a row in master_metadata.csv."""
+    ids = set()
+    if not metadata_csv.exists():
+        return ids
+    with open(metadata_csv, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            ids.add(row["gpp_no"])
+    return ids
+
+
 def update_manifest(originals_dir: Path, manifests_dir: Path) -> Path:
     manifests_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = manifests_dir / "originals_manifest.csv"
     profiled_ids = load_profiled_ids(PROFILES_CSV)
+    metadata_ids = load_metadata_ids(METADATA_CSV)
     entries = []
     if originals_dir.exists():
         for f in sorted(originals_dir.iterdir()):
@@ -105,10 +118,11 @@ def update_manifest(originals_dir: Path, manifests_dir: Path) -> Path:
                     "md5": md5(f),
                     "size_bytes": f.stat().st_size,
                     "profile_present": 1 if gpp_no in profiled_ids else 0,
+                    "metadata_present": 1 if gpp_no in metadata_ids else 0,
                 })
     with open(manifest_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
-            f, fieldnames=["filename", "path", "md5", "size_bytes", "profile_present"]
+            f, fieldnames=["filename", "path", "md5", "size_bytes", "profile_present", "metadata_present"]
         )
         writer.writeheader()
         writer.writerows(entries)
