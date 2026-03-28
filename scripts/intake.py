@@ -22,6 +22,12 @@ import sys
 from datetime import date
 from pathlib import Path
 
+try:
+    import pyarrow.parquet as pq
+    HAS_PYARROW = True
+except ImportError:
+    HAS_PYARROW = False
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -32,7 +38,8 @@ ONEDRIVE_ROOT = (
 ONEDRIVE_GPP = ONEDRIVE_ROOT / "Global Pot Project  Master"
 ORIGINALS_DIR = ONEDRIVE_GPP / "images" / "originals"
 CLEAN_DIR = ONEDRIVE_GPP / "images" / "clean" / "pots_clean"
-PROFILES_CSV = ONEDRIVE_GPP / "gpp_master_profiles.csv"
+PROFILES_PARQUET = REPO_ROOT / "data" / "gpp_master_profiles.parquet"
+PROFILES_CSV = ONEDRIVE_GPP / "gpp_master_profiles.csv"  # fallback
 METADATA_CSV = REPO_ROOT / "data" / "master_metadata.csv"
 MANIFESTS_DIR = REPO_ROOT / "data" / "manifests"
 
@@ -79,11 +86,15 @@ def save_metadata(csv_path: Path, rows: list[dict], fieldnames: list[str]) -> No
 
 
 def load_profiled_ids(profiles_csv: Path) -> set[str]:
-    """Return the set of gpp_nos that have a profile in gpp_master_profiles.csv."""
+    """Return the set of gpp_nos that have a profile. Uses Parquet if available (fast)."""
+    print("  Loading profiled IDs...", flush=True)
+    if HAS_PYARROW and PROFILES_PARQUET.exists():
+        table = pq.read_table(PROFILES_PARQUET, columns=["gpp_no"])
+        return set(table.column("gpp_no").to_pylist())
+    # Fallback: read CSV
     profiled = set()
     if not profiles_csv.exists():
         return profiled
-    print("  Loading profiled IDs...", flush=True)
     with open(profiles_csv, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
