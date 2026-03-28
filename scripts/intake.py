@@ -25,12 +25,14 @@ from pathlib import Path
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-ONEDRIVE_ROOT = (
+ICLOUD_ROOT = (
     Path.home()
-    / "Library/CloudStorage/OneDrive-ImperialCollegeLondon"
+    / "Library/Mobile Documents/com~apple~CloudDocs"
 )
-ONEDRIVE_GPP = ONEDRIVE_ROOT / "Global Pot Project  Master"
-ORIGINALS_DIR = ONEDRIVE_GPP / "images" / "originals"
+ORIGINALS_DIR = (
+    ICLOUD_ROOT
+    / "Desktop/Global Pot Project 2026/pots_original"
+)
 METADATA_CSV = REPO_ROOT / "data" / "master_metadata.csv"
 MANIFESTS_DIR = REPO_ROOT / "data" / "manifests"
 
@@ -85,7 +87,7 @@ def update_manifest(originals_dir: Path, manifests_dir: Path) -> Path:
             if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS:
                 entries.append({
                     "filename": f.name,
-                    "path": str(f.relative_to(ONEDRIVE_ROOT)),
+                    "path": str(f.relative_to(ICLOUD_ROOT)),
                     "md5": md5(f),
                     "size_bytes": f.stat().st_size,
                 })
@@ -161,7 +163,7 @@ def intake(source_folder: Path, source_desc: str) -> None:
                 )
                 continue
 
-        rel_path = str(dest.relative_to(ONEDRIVE_ROOT))
+        rel_path = str(dest.relative_to(ICLOUD_ROOT))
 
         if gpp_no in metadata_index:
             row = metadata_index[gpp_no]
