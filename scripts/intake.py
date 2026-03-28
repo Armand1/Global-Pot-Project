@@ -31,6 +31,7 @@ ONEDRIVE_ROOT = (
 )
 ONEDRIVE_GPP = ONEDRIVE_ROOT / "Global Pot Project  Master"
 ORIGINALS_DIR = ONEDRIVE_GPP / "images" / "originals"
+CLEAN_DIR = ONEDRIVE_GPP / "images" / "clean" / "pots_clean"
 PROFILES_CSV = ONEDRIVE_GPP / "gpp_master_profiles.csv"
 METADATA_CSV = REPO_ROOT / "data" / "master_metadata.csv"
 MANIFESTS_DIR = REPO_ROOT / "data" / "manifests"
@@ -102,11 +103,20 @@ def load_metadata_ids(metadata_csv: Path) -> set[str]:
     return ids
 
 
+def load_clean_ids(clean_dir: Path) -> set[str]:
+    """Return the set of gpp_nos that have a manually cleaned image."""
+    if not clean_dir.exists():
+        return set()
+    return {f.stem for f in clean_dir.iterdir()
+            if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS}
+
+
 def update_manifest(originals_dir: Path, manifests_dir: Path) -> Path:
     manifests_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = manifests_dir / "originals_manifest.csv"
     profiled_ids = load_profiled_ids(PROFILES_CSV)
     metadata_ids = load_metadata_ids(METADATA_CSV)
+    clean_ids = load_clean_ids(CLEAN_DIR)
     entries = []
     if originals_dir.exists():
         for f in sorted(originals_dir.iterdir()):
@@ -119,10 +129,12 @@ def update_manifest(originals_dir: Path, manifests_dir: Path) -> Path:
                     "size_bytes": f.stat().st_size,
                     "profile_present": 1 if gpp_no in profiled_ids else 0,
                     "metadata_present": 1 if gpp_no in metadata_ids else 0,
+                    "clean_present": 1 if gpp_no in clean_ids else 0,
                 })
     with open(manifest_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
-            f, fieldnames=["filename", "path", "md5", "size_bytes", "profile_present", "metadata_present"]
+            f, fieldnames=["filename", "path", "md5", "size_bytes",
+                           "profile_present", "metadata_present", "clean_present"]
         )
         writer.writeheader()
         writer.writerows(entries)
