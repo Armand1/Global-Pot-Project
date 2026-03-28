@@ -31,6 +31,7 @@ ONEDRIVE_ROOT = (
 )
 ONEDRIVE_GPP = ONEDRIVE_ROOT / "Global Pot Project  Master"
 ORIGINALS_DIR = ONEDRIVE_GPP / "images" / "originals"
+PROFILES_CSV = ONEDRIVE_GPP / "gpp_master_profiles.csv"
 METADATA_CSV = REPO_ROOT / "data" / "master_metadata.csv"
 MANIFESTS_DIR = REPO_ROOT / "data" / "manifests"
 
@@ -76,22 +77,38 @@ def save_metadata(csv_path: Path, rows: list[dict], fieldnames: list[str]) -> No
         writer.writerows(rows)
 
 
+def load_profiled_ids(profiles_csv: Path) -> set[str]:
+    """Return the set of gpp_nos that have a profile in gpp_master_profiles.csv."""
+    profiled = set()
+    if not profiles_csv.exists():
+        return profiled
+    print("  Loading profiled IDs...", flush=True)
+    with open(profiles_csv, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            profiled.add(row["gpp_no"])
+    return profiled
+
+
 def update_manifest(originals_dir: Path, manifests_dir: Path) -> Path:
     manifests_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = manifests_dir / "originals_manifest.csv"
+    profiled_ids = load_profiled_ids(PROFILES_CSV)
     entries = []
     if originals_dir.exists():
         for f in sorted(originals_dir.iterdir()):
             if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS:
+                gpp_no = f.stem
                 entries.append({
                     "filename": f.name,
                     "path": str(f.relative_to(ONEDRIVE_ROOT)),
                     "md5": md5(f),
                     "size_bytes": f.stat().st_size,
+                    "profile_present": 1 if gpp_no in profiled_ids else 0,
                 })
     with open(manifest_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
-            f, fieldnames=["filename", "path", "md5", "size_bytes"]
+            f, fieldnames=["filename", "path", "md5", "size_bytes", "profile_present"]
         )
         writer.writeheader()
         writer.writerows(entries)
